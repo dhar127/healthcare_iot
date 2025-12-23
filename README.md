@@ -1,4 +1,4 @@
-# 🏥 Healthcare IoT Monitoring System
+#🏥 Healthcare IoT Monitoring System
 
 ## 🌟 Advanced Visual Dashboard Interface
 
@@ -451,7 +451,6 @@ For issues and questions:
 
 ---
 
-Made with 💙 for better healthcare monitoring
-#   h e a l t h c a r e _ i o t 
  
  
+
