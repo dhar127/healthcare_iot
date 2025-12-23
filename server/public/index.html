@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Healthcare IoT Dashboard</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    h1 {
+      color: white;
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 2.5em;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .notifications {
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      z-index: 9999;
+      max-width: 350px;
+    }
+    
+    .notification {
+      background: white;
+      padding: 15px 20px;
+      margin-bottom: 10px;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      animation: slideIn 0.3s ease;
+      border-left: 5px solid;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .notification.critical { border-left-color: #e74c3c; background: #ffe6e6; }
+    .notification.warning { border-left-color: #f39c12; background: #fff4e6; }
+    .notification.normal { border-left-color: #27ae60; background: #e6ffe6; }
+    
+    @keyframes slideIn {
+      from { transform: translateX(400px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .card {
+      background: white;
+      padding: 25px;
+      border-radius: 15px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::after {
+      content: '🔍 Click to view details';
+      position: absolute;
+      bottom: 10px;
+      right: 15px;
+      font-size: 0.75em;
+      color: rgba(0,0,0,0.4);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 35px rgba(0,0,0,0.2);
+    }
+
+    .card:hover::after {
+      opacity: 1;
+    }
+
+    .card:active {
+      transform: translateY(-2px) scale(0.98);
+    }
+    
+    .card h3 {
+      font-size: 1.2em;
+      margin-bottom: 15px;
+      color: #333;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e22ce 100%);
+      background-size: 400% 400%;
+      animation: gradientShift 15s ease infinite;
+      min-height: 100vh;
+      padding: 20px;
+      position: relative;
+      overflow-x: hidden;
+    }
+    
+    body::before {
+      content: '';
+      position: fixed;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px);
+      background-size: 50px 50px;
+      animation: backgroundMove 20s linear infinite;
+      z-index: 0;
+    }
+    
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    
+    @keyframes backgroundMove {
+      0% { transform: translate(0, 0); }
+      100% { transform: translate(50px, 50px); }
+    }
+    .card-icon {
+      font-size: 1.5em;
+    }
+    
+    .metric-value {
+      font-size: 3em;
+      font-weight: bold;
+      margin: 20px 0;
+    }
+    
+    .metric-unit {
+      font-size: 0.4em;
+      color: #666;
+      font-weight: normal;
+    }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-size: 0.85em;
+      font-weight: bold;
+    }
+    
+    .status-normal { background: #d4edda; color: #155724; }
+    .status-warning { background: #fff3cd; color: #856404; }
+    .status-critical { background: #f8d7da; color: #721c24; }
+    
+    .chart-container {
+      background: white;
+      padding: 25px;
+      border-radius: 15px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+      margin-bottom: 20px;
+    }
+    
+    canvas {
+      max-width: 100%;
+    }
+    
+    .vitals-history {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+      margin-top: 15px;
+    }
+    
+    .history-item {
+      background: #f8f9fa;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 0.9em;
+    }
+    
+    .trend-indicator {
+      font-size: 1.2em;
+      margin-left: 10px;
+    }
+    
+    .trend-up { color: #e74c3c; }
+    .trend-down { color: #27ae60; }
+    .trend-stable { color: #95a5a6; }
+    
+    .top-nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0,0,0,0.8);
+      backdrop-filter: blur(20px);
+      padding: 15px 20px;
+      z-index: 2000;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+    }
+
+    .top-nav-content {
+      max-width: 1600px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .nav-brand {
+      font-size: 1.3em;
+      font-weight: bold;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .nav-button {
+      padding: 10px 20px;
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border: 2px solid rgba(255,255,255,0.2);
+      border-radius: 10px;
+      color: #fff;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9em;
+    }
+    
+    .nav-button:hover {
+      background: rgba(255,255,255,0.2);
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      border-color: rgba(255,255,255,0.4);
+    }
+
+    .nav-button.active {
+      background: rgba(102, 126, 234, 0.5);
+      border-color: #667eea;
+    }
+
+    .container {
+      margin-top: 80px;
+    }
+  </style>
+</head>
+
+<body>
+  <nav class="top-nav">
+    <div class="top-nav-content">
+      <div class="nav-brand">🏥 Healthcare IoT</div>
+      <div class="nav-links">
+        <a href="/index.html" class="nav-button active">🏥 Patient Monitor</a>
+        <a href="/network.html" class="nav-button">🌐 Network</a>
+        <a href="/analytics.html" class="nav-button">📈 Analytics</a>
+        <a href="/visualization.html" class="nav-button">🌌 3D View</a>
+      </div>
+    </div>
+  </nav>
+  
+  <div class="container">
+    <h1>🏥 Real-Time Patient Monitoring Dashboard</h1>
+    
+    <div class="notifications" id="notifications"></div>
+    
+    <div class="dashboard-grid">
+      <div class="card" onclick="openDetailModal('heartrate')">
+        <h3><span class="card-icon">❤️</span>Heart Rate</h3>
+        <div class="metric-value" id="hr" style="color: #e74c3c;">
+          --<span class="metric-unit">bpm</span>
+        </div>
+        <span class="status-badge" id="hr-status">Monitoring...</span>
+        <span class="trend-indicator" id="hr-trend"></span>
+      </div>
+      
+      <div class="card" onclick="openDetailModal('temperature')">
+        <h3><span class="card-icon">🌡️</span>Temperature</h3>
+        <div class="metric-value" id="temp" style="color: #3498db;">
+          --<span class="metric-unit">°C</span>
+        </div>
+        <span class="status-badge" id="temp-status">Monitoring...</span>
+        <span class="trend-indicator" id="temp-trend"></span>
+      </div>
+      
+      <div class="card" onclick="openDetailModal('spo2')">
+        <h3><span class="card-icon">💧</span>Blood Oxygen</h3>
+        <div class="metric-value" id="spo2" style="color: #9b59b6;">
+          --<span class="metric-unit">%</span>
+        </div>
+        <span class="status-badge" id="spo2-status">Monitoring...</span>
+        <span class="trend-indicator" id="spo2-trend"></span>
+      </div>
+      
+      <div class="card" onclick="openDetailModal('bloodpressure')">
+        <h3><span class="card-icon">💉</span>Blood Pressure</h3>
+        <div class="metric-value" id="bp" style="color: #e67e22; font-size: 2em;">
+          --/--<span class="metric-unit">mmHg</span>
+        </div>
+        <span class="status-badge" id="bp-status">Monitoring...</span>
+        <span class="trend-indicator" id="bp-trend"></span>
+      </div>
+    </div>
+
+    <!-- Detail Modals -->
+    <div id="modal" class="modal">
+      <div class="modal-content">
+        <span class="modal-close" onclick="closeModal()">×</span>
+        <div id="modalBody"></div>
+      </div>
+    </div>
+    
+    <div class="chart-container">
+      <h3>📊 Heart Rate Trend (Last 20 readings)</h3>
+      <canvas id="hrChart"></canvas>
+    </div>
+    
+    <div class="chart-container">
+      <h3>📈 Vital Signs Overview</h3>
+      <canvas id="vitalsChart"></canvas>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+  <script>
+    // Simulated real-time data
+    let hrData = [];
+    let tempData = [];
+    let spo2Data = [];
+    let bpSysData = [];
+    let bpDiaData = [];
+    let timeLabels = [];
+    let maxDataPoints = 20;
+    
+    // History storage
+    let hrHistory = [];
+    let tempHistory = [];
+    let spo2History = [];
+    let bpHistory = [];
+    let maxHistoryItems = 50;
+    
+    let previousValues = {
+      hr: null,
+      temp: null,
+      spo2: null,
+      bpSys: null
+    };
+    
+    // Initialize charts
+    const hrCtx = document.getElementById('hrChart').getContext('2d');
+    const hrChart = new Chart(hrCtx, {
+      type: 'line',
+      data: {
+        labels: timeLabels,
+        datasets: [{
+          label: 'Heart Rate (bpm)',
+          data: hrData,
+          borderColor: '#e74c3c',
+          backgroundColor: 'rgba(231, 76, 60, 0.1)',
+          tension: 0.4,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: true }
+        },
+        scales: {
+          y: { beginAtZero: false, min: 50, max: 150 }
+        }
+      }
+    });
+    
+    const vitalsCtx = document.getElementById('vitalsChart').getContext('2d');
+    const vitalsChart = new Chart(vitalsCtx, {
+      type: 'line',
+      data: {
+        labels: timeLabels,
+        datasets: [
+          {
+            label: 'Heart Rate (bpm)',
+            data: hrData,
+            borderColor: '#e74c3c',
+            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+            yAxisID: 'y'
+          },
+          {
+            label: 'Temperature (°C)',
+            data: tempData,
+            borderColor: '#3498db',
+            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+            yAxisID: 'y1'
+          },
+          {
+            label: 'SpO2 (%)',
+            data: spo2Data,
+            borderColor: '#9b59b6',
+            backgroundColor: 'rgba(155, 89, 182, 0.1)',
+            yAxisID: 'y2'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        scales: {
+          y: { type: 'linear', display: true, position: 'left', min: 50, max: 150 },
+          y1: { type: 'linear', display: true, position: 'right', min: 35, max: 40, grid: { drawOnChartArea: false } },
+          y2: { type: 'linear', display: false, min: 85, max: 100 }
+        }
+      }
+    });
+    
+    function showNotification(message, type) {
+      const container = document.getElementById('notifications');
+      const notification = document.createElement('div');
+      notification.className = `notification ${type}`;
+      
+      const icon = type === 'critical' ? '🚨' : type === 'warning' ? '⚠️' : '✅';
+      notification.innerHTML = `<span style="font-size: 1.5em;">${icon}</span><span>${message}</span>`;
+      
+      container.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.style.animation = 'slideIn 0.3s ease reverse';
+        setTimeout(() => notification.remove(), 300);
+      }, 5000);
+    }
+    
+    function getTrend(current, previous) {
+      if (!previous) return '';
+      const diff = current - previous;
+      if (Math.abs(diff) < 1) return '<span class="trend-stable">➡️</span>';
+      return diff > 0 ? '<span class="trend-up">⬆️</span>' : '<span class="trend-down">⬇️</span>';
+    }
+    
+    function updateVitals() {
+      const time = new Date().toLocaleTimeString();
+      
+      // Simulate realistic vital signs
+      const hr = Math.floor(Math.random() * 30) + 70; // 70-100 bpm
+      const temp = (Math.random() * 2 + 36.5).toFixed(1); // 36.5-38.5°C
+      const spo2 = Math.floor(Math.random() * 5) + 95; // 95-100%
+      const bpSys = Math.floor(Math.random() * 30) + 110; // 110-140 mmHg
+      const bpDia = Math.floor(Math.random() * 20) + 70; // 70-90 mmHg
+      
+      // Update displays
+      document.getElementById('hr').innerHTML = `${hr}<span class="metric-unit">bpm</span>`;
+      document.getElementById('temp').innerHTML = `${temp}<span class="metric-unit">°C</span>`;
+      document.getElementById('spo2').innerHTML = `${spo2}<span class="metric-unit">%</span>`;
+      document.getElementById('bp').innerHTML = `${bpSys}/${bpDia}<span class="metric-unit">mmHg</span>`;
+      
+      // Update trends
+      document.getElementById('hr-trend').innerHTML = getTrend(hr, previousValues.hr);
+      document.getElementById('temp-trend').innerHTML = getTrend(parseFloat(temp), previousValues.temp);
+      document.getElementById('spo2-trend').innerHTML = getTrend(spo2, previousValues.spo2);
+      document.getElementById('bp-trend').innerHTML = getTrend(bpSys, previousValues.bpSys);
+      
+      // Update previous values
+      previousValues = { hr, temp: parseFloat(temp), spo2, bpSys };
+      
+      // Check for alerts
+      let hrStatus = 'normal', tempStatus = 'normal', spo2Status = 'normal', bpStatus = 'normal';
+      
+      if (hr < 60 || hr > 100) {
+        hrStatus = hr < 60 || hr > 120 ? 'critical' : 'warning';
+        showNotification(`Heart rate ${hr < 60 ? 'too low' : 'elevated'}: ${hr} bpm`, hrStatus);
+      }
+      
+      if (temp < 36.5 || temp > 37.5) {
+        tempStatus = temp < 36 || temp > 38 ? 'critical' : 'warning';
+        showNotification(`Temperature ${temp < 36.5 ? 'below' : 'above'} normal: ${temp}°C`, tempStatus);
+      }
+      
+      if (spo2 < 95) {
+        spo2Status = spo2 < 90 ? 'critical' : 'warning';
+        showNotification(`Low oxygen saturation: ${spo2}%`, spo2Status);
+      }
+      
+      if (bpSys < 90 || bpSys > 140) {
+        bpStatus = bpSys < 80 || bpSys > 160 ? 'critical' : 'warning';
+        showNotification(`Blood pressure ${bpSys < 90 ? 'low' : 'high'}: ${bpSys}/${bpDia} mmHg`, bpStatus);
+      }
+      
+      // Update status badges
+      document.getElementById('hr-status').className = `status-badge status-${hrStatus}`;
+      document.getElementById('hr-status').textContent = hrStatus.toUpperCase();
+      
+      document.getElementById('temp-status').className = `status-badge status-${tempStatus}`;
+      document.getElementById('temp-status').textContent = tempStatus.toUpperCase();
+      
+      document.getElementById('spo2-status').className = `status-badge status-${spo2Status}`;
+      document.getElementById('spo2-status').textContent = spo2Status.toUpperCase();
+      
+      document.getElementById('bp-status').className = `status-badge status-${bpStatus}`;
+      document.getElementById('bp-status').textContent = bpStatus.toUpperCase();
+      
+      // Update chart data
+      if (timeLabels.length >= maxDataPoints) {
+        timeLabels.shift();
+        hrData.shift();
+        tempData.shift();
+        spo2Data.shift();
+      bpDiaData.push(bpDia);
+        bpSysData.shift();
+      }
+      
+      timeLabels.push(time);
+      hrData.push(hr);
+      tempData.push(parseFloat(temp));
+      spo2Data.push(spo2);
+      bpSysData.push(bpSys);
+
+    // Interactive Modal Functions
+    let modalChart = null;
+
+    function openDetailModal(type) {
+      const modal = document.getElementById('modal');
+      const modalBody = document.getElementById('modalBody');
+      
+      let content = '';
+      
+      switch(type) {
+        case 'heartrate':
+          content = generateHeartRateModal();
+          break;
+        case 'temperature':
+          content = generateTemperatureModal();
+          break;
+        case 'spo2':
+          content = generateSpO2Modal();
+          break;
+        case 'bloodpressure':
+          content = generateBloodPressureModal();
+          break;
+      }
+      
+      modalBody.innerHTML = content;
+      modal.classList.add('active');
+      
+      // Create modal chart
+      setTimeout(() => {
+        createModalChart(type);
+      }, 100);
+    }
+
+    function closeModal() {
+      const modal = document.getElementById('modal');
+      modal.classList.remove('active');
+      if (modalChart) {
+        modalChart.destroy();
+        modalChart = null;
+      }
+    }
+
+    function generateHeartRateModal() {
+      const currentHR = hrData[hrData.length - 1] || 0;
+      const avgHR = hrData.length > 0 ? Math.round(hrData.reduce((a,b) => a+b, 0) / hrData.length) : 0;
+      const minHR = hrData.length > 0 ? Math.min(...hrData) : 0;
+      const maxHR = hrData.length > 0 ? Math.max(...hrData) : 0;
+      
+      const status = currentHR < 60 || currentHR > 100 ? 'warning' : 'normal';
+      const statusText = currentHR < 60 ? 'Low Heart Rate' : currentHR > 100 ? 'Elevated Heart Rate' : 'Normal Heart Rate';
+      
+      return `
+        <div class="modal-header">
+          <span class="modal-icon">❤️</span>
+          <div>
+            <h2 class="modal-title">Heart Rate Monitor</h2>
+            <p class="modal-subtitle">Real-time cardiac activity tracking</p>
+          </div>
+        </div>
+
+        <div class="alert-box ${status}">
+          <span style="font-size: 2em;">${status === 'normal' ? '✓' : '⚠'}</span>
+          <div>
+            <strong>${statusText}</strong>
+            <p style="margin:5px 0 0 0; font-size: 0.9em;">Current: ${currentHR} bpm</p>
+          </div>
+        </div>
+
+        <div class="detail-grid">
+          <div class="detail-item">
+            <div class="detail-label">Current</div>
+            <div class="detail-value" style="color: #e74c3c;">${currentHR} <span style="font-size: 0.4em;">bpm</span></div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Average</div>
+            <div class="detail-value" style="color: #3498db;">${avgHR} <span style="font-size: 0.4em;">bpm</span></div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Minimum</div>
+            <div class="detail-value" style="color: #2ecc71;">${minHR} <span style="font-size: 0.4em;">bpm</span></div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Maximum</div>
+            <div class="detail-value" style="color: #e67e22;">${maxHR} <span style="font-size: 0.4em;">bpm</span></div>
+          </div>
+        </div>
+
+        <div class="modal-chart-container">
+          <h3>Last 20 Readings</h3>
+          <canvas id="modalChart" height="100"></canvas>
+        </div>
+
+        <div class="recommendations">
+          <h3>💡 Health Recommendations</h3>
+          <ul>
+            <li>Normal resting heart rate: 60-100 bpm</li>
+            <li>Regular monitoring helps detect irregularities early</li>
+            <li>Exercise and stress can temporarily elevate heart rate</li>
+            <li>Consult doctor if consistently outside normal range</li>
+          </ul>
+        </div>
+      `;
+    }
+
+    function generateTemperatureModal() {
+      const currentTemp = tempData[tempData.length - 1] || 0;
+      const avgTemp = tempData.length > 0 ? (tempData.reduce((a,b) => a+b, 0) / tempData.length).toFixed(1) : 0;
+      const minTemp = tempData.length > 0 ? Math.min(...tempData).toFixed(1) : 0;
+      const maxTemp = tempData.length > 0 ? Math.max(...tempData).toFixed(1) : 0;
+      
+      const status = currentTemp < 36.5 || currentTemp > 37.5 ? 'warning' : 'normal';
+      const statusText = currentTemp < 36.5 ? 'Low Temperature' : currentTemp > 37.5 ? 'Elevated Temperature' : 'Normal Temperature';
+      
+      return `
+        <div class="modal-header">
+          <span class="modal-icon">🌡️</span>
+          <div>
+            <h2 class="modal-title">Body Temperature</h2>
+            <p class="modal-subtitle">Continuous thermal monitoring</p>
+          </div>
+        </div>
+
+        <div class="alert-box ${status}">
+          <span style="font-size: 2em;">${status === 'normal' ? '✓' : '⚠'}</span>
+          <div>
+            <strong>${statusText}</strong>
+            <p style="margin:5px 0 0 0; font-size: 0.9em;">Current: ${currentTemp}°C</p>
+          </div>
+        </div>
+
+        <div class="detail-grid">
+          <div class="detail-item">
+            <div class="detail-label">Current</div>
+            <div class="detail-value" style="color: #3498db;">${currentTemp} <span style="font-size: 0.4em;">°C</span></div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Average</div>
+            <div class="detail-value" style="color: #9b59b6;">${avgTemp} <span style="font-size: 0.4em;">°C</span></div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Minimum</div>
+            <div class="detail-value" style="color: #2ecc71;">${minTemp} <span style="font-size: 0.4em;">°C</span></div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Maximum</div>
+            <div class="detail-value" style="color: #e74c3c;">${maxTemp} <span style="font-size: 0.4em;">°C</span></div>
+          </div>
+        </div>
+
+        <div class="modal-chart-container">
+          <h3>Temperature Trend</h3>
+          <canvas id="modalChart" height="100"></canvas>
+        </div>
+
+        <div class="recommendations">
+          <h3>💡 Health Recommendations</h3>
+          <ul>
+            <li>Normal body temperature: 36.5-37.5°C (97.7-99.5°F)</li>
+            <li>Temperature varies throughout the day</li>
+            <li>Fever typically starts at 38°C (100.4°F)</li>
+            <li>Monitor for symptoms if temperature is abnormal</li>
+          </ul>
+        </div>
+      `;
+    }
+
+    function generateSpO2Modal() {
+      const currentSpO2 = spo2Data[spo2Data.length - 1] || 0;
+      const avgSpO2 = spo2Data.length > 0 ? Math.round(spo2Data.reduce((a,b) => a+b, 0) / spo2Data.length) : 0;
+      const minSpO2 = spo2Data.length > 0 ? Math.min(...spo2Data) : 0;
+      const maxSpO2 = spo2Data.length > 0 ? Math.max(...spo2Data) : 0;
+      
+      const status = currentSpO2 < 95 ? 'warning' : 'normal';
+      const statusText = currentSpO2 < 95 ? 'Low Oxygen Saturation' : 'Normal Oxygen Saturation';
+      
+      return `
+        <div class="modal-header">
+          <span class="modal-icon">💧</span>
+          <div>
+            <h2 class="modal-title">Blood Oxygen (SpO2)</h2>
+            <p class="modal-subtitle">Oxygen saturation monitoring</p>
+          </div>
+        </div>
+
+        <div class="alert-box ${status}">
+          <span style="font-size: 2em;">${status === 'normal' ? '✓' : '⚠'}</span>
+          <div>
+            <strong>${statusText}</strong>
+            <p style="margin:5px 0 0 0; font-size: 0.9em;">Current: ${currentSpO2}%</p>
+          </div>
+        </div>
+
+        <div class="detail-grid">
+          <div class="detail-item">
+            <div class="detail-label">Current</div>
+            <div class="detail-value" style="color: #9b59b6;">${currentSpO2} <span style="font-size: 0.4em;">%</span></div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Average</div>
+            <div class="detail-value" style="color: #3498db;">${avgSpO2} <span style="font-size: 0.4em;">%</span></div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Minimum</div>
+            <div class="detail-value" style="color: #e67e22;">${minSpO2} <span style="font-size: 0.4em;">%</span></div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Maximum</div>
+            <div class="detail-value" style="color: #2ecc71;">${maxSpO2} <span style="font-size: 0.4em;">%</span></div>
+          </div>
+        </div>
+
+        <div class="modal-chart-container">
+          <h3>SpO2 Trend</h3>
+          <canvas id="modalChart" height="100"></canvas>
+        </div>
+
+        <div class="recommendations">
+          <h3>💡 Health Recommendations</h3>
+          <ul>
+            <li>Normal SpO2 levels: 95-100%</li>
+            <li>Below 90% requires immediate medical attention</li>
+            <li>SpO2 indicates how well oxygen is distributed in blood</li>
+            <li>Low levels may indicate respiratory issues</li>
+          </ul>
+        </div>
+      `;
+    }
+
+    function generateBloodPressureModal() {
+      const currentSys = bpSysData[bpSysData.length - 1] || 0;
+      const currentDia = bpDiaData[bpDiaData.length - 1] || 0;
+      const avgSys = bpSysData.length > 0 ? Math.round(bpSysData.reduce((a,b) => a+b, 0) / bpSysData.length) : 0;
+      const avgDia = bpDiaData.length > 0 ? Math.round(bpDiaData.reduce((a,b) => a+b, 0) / bpDiaData.length) : 0;
+      
+      const status = currentSys < 90 || currentSys > 140 ? 'warning' : 'normal';
+      const statusText = currentSys < 90 ? 'Low Blood Pressure' : currentSys > 140 ? 'High Blood Pressure' : 'Normal Blood Pressure';
+      
+      return `
+        <div class="modal-header">
+          <span class="modal-icon">💉</span>
+          <div>
+            <h2 class="modal-title">Blood Pressure</h2>
+            <p class="modal-subtitle">Cardiovascular pressure monitoring</p>
+          </div>
+        </div>
+
+        <div class="alert-box ${status}">
+          <span style="font-size: 2em;">${status === 'normal' ? '✓' : '⚠'}</span>
+          <div>
+            <strong>${statusText}</strong>
+            <p style="margin:5px 0 0 0; font-size: 0.9em;">Current: ${currentSys}/${currentDia} mmHg</p>
+          </div>
+        </div>
+
+        <div class="detail-grid">
+          <div class="detail-item">
+            <div class="detail-label">Systolic (Current)</div>
+            <div class="detail-value" style="color: #e67e22;">${currentSys} <span style="font-size: 0.4em;">mmHg</span></div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Diastolic (Current)</div>
+            <div class="detail-value" style="color: #9b59b6;">${currentDia} <span style="font-size: 0.4em;">mmHg</span></div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Systolic (Avg)</div>
+            <div class="detail-value" style="color: #3498db;">${avgSys} <span style="font-size: 0.4em;">mmHg</span></div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Diastolic (Avg)</div>
+            <div class="detail-value" style="color: #2ecc71;">${avgDia} <span style="font-size: 0.4em;">mmHg</span></div>
+          </div>
+        </div>
+
+        <div class="modal-chart-container">
+          <h3>Blood Pressure Trend</h3>
+          <canvas id="modalChart" height="100"></canvas>
+        </div>
+
+        <div class="recommendations">
+          <h3>💡 Health Recommendations</h3>
+          <ul>
+            <li>Normal BP: 90-120 systolic, 60-80 diastolic</li>
+            <li>High BP increases risk of heart disease and stroke</li>
+            <li>Regular monitoring helps track cardiovascular health</li>
+            <li>Lifestyle changes can help manage blood pressure</li>
+          </ul>
+        </div>
+      `;
+    }
+
+    function createModalChart(type) {
+      const canvas = document.getElementById('modalChart');
+      if (!canvas) return;
+      
+      const ctx = canvas.getContext('2d');
+      let chartData, chartLabel, chartColor;
+      
+      switch(type) {
+        case 'heartrate':
+          chartData = hrData;
+          chartLabel = 'Heart Rate (bpm)';
+          chartColor = '#e74c3c';
+          break;
+        case 'temperature':
+          chartData = tempData;
+          chartLabel = 'Temperature (°C)';
+          chartColor = '#3498db';
+          break;
+        case 'spo2':
+          chartData = spo2Data;
+          chartLabel = 'SpO2 (%)';
+          chartColor = '#9b59b6';
+          break;
+        case 'bloodpressure':
+          chartLabel = 'Blood Pressure (mmHg)';
+          chartColor = '#e67e22';
+          break;
+      }
+      
+      if (type === 'bloodpressure') {
+        modalChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: timeLabels,
+            datasets: [
+              {
+                label: 'Systolic',
+                data: bpSysData,
+                borderColor: '#e67e22',
+                backgroundColor: 'rgba(230, 126, 34, 0.1)',
+                tension: 0.4,
+                fill: true
+              },
+              {
+                label: 'Diastolic',
+                data: bpDiaData,
+                borderColor: '#9b59b6',
+                backgroundColor: 'rgba(155, 89, 182, 0.1)',
+                tension: 0.4,
+                fill: true
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: true }
+            },
+            scales: {
+              y: { beginAtZero: false }
+            }
+          }
+        });
+      } else {
+        modalChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: timeLabels,
+            datasets: [{
+              label: chartLabel,
+              data: chartData,
+              borderColor: chartColor,
+              backgroundColor: chartColor + '20',
+              tension: 0.4,
+              fill: true,
+              borderWidth: 3
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: true }
+            },
+            scales: {
+              y: { beginAtZero: false }
+            }
+          }
+        });
+      }
+    }
+
+    // Close modal on outside click
+    document.getElementById('modal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeModal();
+      }
+    });
+
+    // Close modal on ESC key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeModal();
+      }
+    });
+      
+      hrChart.update();
+      vitalsChart.update();
+    }
+    
+    // Update every 3 seconds
+    setInterval(updateVitals, 3000);
+    updateVitals();
+  </script>
+</body>
+</html>

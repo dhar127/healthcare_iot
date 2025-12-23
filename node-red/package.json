@@ -1,0 +1,24 @@
+{
+  "name": "healthcare-iot-nodered",
+  "version": "1.0.0",
+  "description": "Node-RED flows for Healthcare IoT Monitoring System",
+  "main": "index.js",
+  "scripts": {
+    "start": "node-red --settings settings.js --userDir .",
+    "dev": "node-red --settings settings.js --userDir . -v"
+  },
+  "keywords": [
+    "node-red",
+    "healthcare",
+    "iot",
+    "mqtt",
+    "monitoring"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "node-red": "^3.1.0",
+    "node-red-dashboard": "^3.6.0",
+    "node-red-contrib-mqtt-broker": "^0.2.5"
+  }
+}
